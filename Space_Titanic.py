@@ -11,23 +11,30 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSe
 from sklearn.naive_bayes import GaussianNB
 from xgboost import XGBClassifier
 
+# reading the data
 data = pd.read_csv('train.csv')
 test = pd.read_csv('test.csv')
+# creating ids for the final evaluation
 test_ids = test['PassengerId']
 
+# displaying the missing data
 sns.heatmap(data.isnull(), cbar = False, yticklabels = False)
 #plt.show()
 
+# dropping the insignificant coulmns of data
 data.drop('Name', axis = 1, inplace = True)
 test.drop('Name', axis = 1, inplace = True)
 # print(data.info())
 
+# creating new numerical and categorical columns to make the further calculation more precise
 data['Groups'] = data['PassengerId'].str[:4]
 test['Groups'] = data['PassengerId'].str[:4]
 data['The_Numbers'] = data['PassengerId'].str[5:]
 test['The_Numbers'] = data['PassengerId'].str[5:]
 
+# cleaning data
 def cleaning_service(data):
+    # dividing the data into numerical and unique categorical data
     cols = ['CryoSleep', 'Age', 'VIP', 'RoomService', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck']
     cat_cols = ['HomePlanet', 'Cabin', 'Destination', 'Groups', 'The_Numbers']
     unique_destinations = data['Destination'].unique()
@@ -35,10 +42,12 @@ def cleaning_service(data):
     unique_groups = data['Groups'].unique()
     unique_numbers = data['The_Numbers'].unique()
     unique_cryosleep = data['CryoSleep'].unique()
+    # filling missing data with the mean value
     for col in cols:
         data[col].fillna(data[col].median(), inplace=True)
     for i in cat_cols:
         data[i] = data[i].fillna(data[i].mode()[0])
+    # mapping data in order to make more useful and meaningful
     data['Deck'] = data['Cabin'].apply(lambda s: s[0] if pd.notnull(s) else 'M')
     data['Port'] = data['Cabin'].apply(lambda s: s[-1] if pd.notnull(s) else 'M')
     data["Deck"] = data["Deck"].map({'B':0, 'F':1, 'A':2, 'G':3, 'E':4, 'D':5, 'C':6, 'T':7}).astype(int)
@@ -52,12 +61,15 @@ def cleaning_service(data):
     data["CryoSleep"] = data["CryoSleep"].map(dict(zip(unique_cryosleep,list(range(len(unique_cryosleep)))))).astype(int)
     data.drop('PassengerId', axis=1, inplace=True)
     return data
+# applying the function to data
 data = cleaning_service(data)
 test = cleaning_service(test)
+# checking data for missing values ones again
 sns.heatmap(data.isnull(), yticklabels=False, cbar=False)
 #plt.show()
 #print(data.head())
 
+# staring the training process for the model
 X = data.drop('Transported', axis = 1)
 y = data['Transported']
 
